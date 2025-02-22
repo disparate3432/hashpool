@@ -6,17 +6,21 @@ on:
   pull_request:
     branches: [ "master" ]
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
+  tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+    - uses: cachix/install-nix-action@v26
+    - uses: cachix/cachix-action@v14
+      with:
+        name: devenv
+    - name: Install devenv.sh
+      run: nix profile install nixpkgs#devenv
+
+    - name: Build the devenv shell and run any pre-commit hooks
+      run: devenv test
